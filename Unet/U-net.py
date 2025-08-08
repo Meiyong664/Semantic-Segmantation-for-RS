@@ -35,11 +35,13 @@ class UNetModel(nn.Module):
         self.in_channels = in_channels
         self.num_classes = num_classes
 
+        # The Encoder Part, conbined with for Encoder, passing each with the shape downsample and Channels doubled
         self.Encoder1 = BasicBlock(self.in_channels, 64)
         self.Encoder2 = BasicBlock(64, 128)
         self.Encoder3 = BasicBlock(128, 256)
         self.Encoder4 = BasicBlock(256, 512)
 
+        # the Central Part
         self.CentralConv = nn.Sequential(
             nn.Conv2d(512, 1024, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(1024),
@@ -49,6 +51,7 @@ class UNetModel(nn.Module):
             nn.ReLU(inplace=True)
         )
 
+        # the Decoder Part, similar to the Decoder Part
         self.Upconv1 = nn.ConvTranspose2d(1024, 512, kernel_size=2, stride=2)
         self.Decoder1 = BasicBlock(1024, 512)
         self.Upconv2 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
@@ -62,43 +65,47 @@ class UNetModel(nn.Module):
 
         self.Maxpool = nn.MaxPool2d(2, 2)
 
-    def forward(self, x):
+    def forward(self, x):   # x.shape: (B, 3, H, W)
 
-        out = self.Encoder1(x)
-        copy1 = out
-        out = self.Maxpool(out)
+        # Encoder Path - Downsampling
+        out = self.Encoder1(x)      # (B, 64, H, W)
+        copy1 = out                 # Save for skip connection
+        out = self.Maxpool(out)     # (B, 64, H/2, W/2)
 
-        out = self.Encoder2(out)
-        copy2 = out
-        out = self.Maxpool(out)
+        out = self.Encoder2(out)    # (B, 128, H/2, W/2)
+        copy2 = out                 # Save for skip connection
+        out = self.Maxpool(out)     # (B, 128, H/4, W/4)
 
-        out = self.Encoder3(out)
-        copy3 = out
-        out = self.Maxpool(out)
+        out = self.Encoder3(out)    # (B, 256, H/4, W/4)
+        copy3 = out                 # Save for skip connection
+        out = self.Maxpool(out)     # (B, 256, H/8, W/8)
 
-        out = self.Encoder4(out)
-        copy4 = out
-        out = self.Maxpool(out)
+        out = self.Encoder4(out)    # (B, 512, H/8, W/8)
+        copy4 = out                 # Save for skip connection
+        out = self.Maxpool(out)     # (B, 512, H/16, W/16)
 
-        out = self.CentralConv(out)
+        # Bottleneck
+        out = self.CentralConv(out) # (B, 1024, H/16, W/16)
 
-        out = self.Upconv1(out)
-        out = torch.cat((copy4, out), dim=1)    # cat on the C dim
-        out = self.Decoder1(out)
+        # Decoder Path - Upsampling with Skip Connections
+        out = self.Upconv1(out)     # (B, 512, H/8, W/8)
+        out = torch.cat((copy4, out), dim=1)    # (B, 1024, H/8, W/8) - skip connection
+        out = self.Decoder1(out)    # (B, 512, H/8, W/8)
 
-        out = self.Upconv2(out)
-        out = torch.cat((copy3, out), dim=1)
-        out = self.Decoder2(out)
+        out = self.Upconv2(out)     # (B, 256, H/4, W/4)
+        out = torch.cat((copy3, out), dim=1)    # (B, 512, H/4, W/4) - skip connection
+        out = self.Decoder2(out)    # (B, 256, H/4, W/4)
 
-        out = self.Upconv3(out)
-        out = torch.cat((copy2, out), dim=1)
-        out = self.Decoder3(out)        
+        out = self.Upconv3(out)     # (B, 128, H/2, W/2)
+        out = torch.cat((copy2, out), dim=1)    # (B, 256, H/2, W/2) - skip connection
+        out = self.Decoder3(out)    # (B, 128, H/2, W/2)
 
-        out = self.Upconv4(out)
-        out = torch.cat((copy1, out), dim=1)
-        out = self.Decoder4(out)
+        out = self.Upconv4(out)     # (B, 64, H, W)
+        out = torch.cat((copy1, out), dim=1)    # (B, 128, H, W) - skip connection
+        out = self.Decoder4(out)    # (B, 64, H, W)
 
-        out = self.classifier(out)
+        # Final Classification Layer
+        out = self.classifier(out)  # (B, num_classes, H, W)
 
         return out
 
