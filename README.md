@@ -3,9 +3,8 @@ This is the Repo for recording myself ot Learning the basic Semantic Segmantatio
 
 ## Basic Model
 - FCN
-- U-net Class
--- U-net
--- U-net++ (UNetPlusPlus)
--- transUnet
--- SwinUnet
-- 
+1. U-net Class
+    1. U-net
+    2. U-net++ (UNetPlusPlus)
+    3. transUnet
+    4. SwinUnet
