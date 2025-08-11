@@ -13,7 +13,6 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms as T
 from torchvision.transforms import functional as TF
-# def _resolve_tqdm():
 from tqdm import tqdm
 
 from Unet import UNetModel

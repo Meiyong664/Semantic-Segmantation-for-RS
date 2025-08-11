@@ -4,5 +4,6 @@ This is the Repo for recording myself ot Learning the basic Semantic Segmantatio
 ## Basic Model
 - FCN
 - U-net
+- Unet++
 - Deeplab
 - 
