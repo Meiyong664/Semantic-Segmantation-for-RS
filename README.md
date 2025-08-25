@@ -8,3 +8,6 @@ This is the Repo for recording myself ot Learning the basic Semantic Segmantatio
     2. U-net++ (UNetPlusPlus)
     3. transUnet
     4. SwinUnet
+3. Segformer
+4. DeepLabV3
+5. SAM (Segment Anything Model)

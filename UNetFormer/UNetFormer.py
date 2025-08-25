@@ -10,13 +10,11 @@ from timm.models.layers import DropPath, to_2tuple, trunc_normal_
 class ConvBNReLu(nn.Module):
     def __init__(self, in_ch, out_ch, kernel_size=3, stride=1, padding=1):
         super().__init__()
-
         self.conv1 = nn.Conv2d(in_ch, out_ch, kernel_size=kernel_size, stride=stride, padding=padding, bias=False)
         self.BN = nn.BatchNorm2d(out_ch)
-        self.ReLU = nn.ReLU(inplace=True)
+        self.ReLU = nn.ReLU()
 
     def forward(self, x):
-
         x = self.ReLU(self.BN(self.conv1(x)))
         return x
 
@@ -301,7 +299,7 @@ class FeatureRefinementHead(nn.Module):
         self.Channel_path_attn = nn.Sequential(
             nn.AdaptiveAvgPool2d(1),
             nn.Conv2d(in_ch, in_ch // 16, kernel_size=1, bias=False),
-            nn.ReLU(inplace=True),
+            nn.ReLU(),
             nn.Conv2d(in_ch//16, in_ch, kernel_size=1, bias=False),
             nn.Sigmoid()
         )
@@ -317,7 +315,7 @@ class FeatureRefinementHead(nn.Module):
             nn.Conv2d(in_ch, out_ch, kernel_size=1, bias=False)
         )
 
-        self.act = nn.ReLU(inplace=True)
+        self.act = nn.ReLU()
 
     def forward(self, x):
         shortcut = self.shortcut(x)
@@ -338,7 +336,7 @@ class AuxHead(nn.Module):
     def __init__(self, in_channels=64, num_classes=8):
         super().__init__()
         self.conv = ConvBNReLu(in_channels, in_channels)
-        self.drop = nn.Dropout(0.1)
+        self.drop = nn.Dropout(0.1, inplace=False)
         self.conv_out = nn.Conv2d(in_channels, num_classes, kernel_size=1, bias=False)
 
     def forward(self, x, h, w):
@@ -379,7 +377,7 @@ class Decoder(nn.Module):
 
         self.segmention = nn.Sequential(
             ConvBNReLu(Decoder_ch, Decoder_ch),
-            nn.Dropout2d(p=dropout, inplace=True),
+            nn.Dropout2d(p=dropout, inplace=False),
             nn.Conv2d(Decoder_ch, num_classes, kernel_size=1)
         )
 
@@ -396,17 +394,17 @@ class Decoder(nn.Module):
             out = self.pre_conv(res3)
 
             out = self.GLTB1(out)
-            h4 = self.aux_up4(out)
+            h4 = self.aux_up4(out).clone()
 
             out = self.up1(out)
             out = self.ws1(res2, out)
             out = self.GLTB2(out)
-            h3 = self.aux_up3(out)
+            h3 = self.aux_up3(out).clone()
 
             out = self.up2(out)
             out = self.ws2(res1, out)
             out = self.GLTB3(out)
-            h2 = out
+            h2 = out.clone()
 
             out = self.up3(out)
             out = self.ws3(res0, out)
